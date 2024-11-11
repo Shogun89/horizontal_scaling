@@ -1,0 +1,22 @@
+FROM python:3.10
+
+WORKDIR /app
+
+# Install MySQL client
+RUN apt-get update && \
+    apt-get install -y default-mysql-client && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install requirements
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+# Copy application code
+COPY backend/ /app/backend/
+COPY scripts/ /app/scripts/
+
+# Make scripts executable
+RUN chmod +x /app/scripts/api_entrypoint.sh
+RUN chmod +x /app/scripts/enable_mysql_replication.sh
+
+ENTRYPOINT ["/app/scripts/api_entrypoint.sh"]

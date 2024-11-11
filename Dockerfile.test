@@ -1,0 +1,11 @@
+FROM python:3.10
+
+WORKDIR /app
+
+# Copy scripts
+COPY scripts/ /app/scripts/
+
+# Make entrypoint executable
+RUN chmod +x /app/scripts/test_entrypoint.sh
+
+ENTRYPOINT ["/app/scripts/test_entrypoint.sh"]

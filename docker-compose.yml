@@ -1,0 +1,123 @@
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api-a
+      - api-b
+
+  api-a:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: api-a
+    environment:
+      - SHARD=a
+    ports:
+      - "8001:8000"
+    depends_on:
+      - mysql-master-a
+      - mysql-replica-a
+
+  api-b:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: api-b
+    environment:
+      - SHARD=b
+    ports:
+      - "8002:8000"
+    depends_on:
+      - mysql-master-b
+      - mysql-replica-b
+
+  mysql-master-a:
+    container_name: mysql-master-a
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: fastapi_db
+    ports:
+      - "3316:3306"
+    command: >
+      --authentication_policy=mysql_native_password
+      --server-id=1
+      --log-bin=mysql-bin
+      --gtid_mode=ON
+      --enforce-gtid-consistency=ON
+      --innodb-buffer-pool-size=1G
+      --host-cache-size=0
+
+  mysql-replica-a:
+    container_name: mysql-replica-a
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: fastapi_db
+    ports:
+      - "3317:3306"
+    command: >
+      --authentication_policy=mysql_native_password
+      --server-id=11
+      --log-bin=mysql-bin
+      --gtid_mode=ON
+      --enforce-gtid-consistency=ON
+      --read-only=1
+      --relay-log=relay-bin
+      --skip_replica_start=1
+      --innodb-buffer-pool-size=1G
+      --host-cache-size=0
+
+  mysql-master-b:
+    container_name: mysql-master-b
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: fastapi_db
+    ports:
+      - "3326:3306"
+    command: >
+      --authentication_policy=mysql_native_password
+      --server-id=2
+      --log-bin=mysql-bin
+      --gtid_mode=ON
+      --enforce-gtid-consistency=ON
+      --innodb-buffer-pool-size=1G
+      --host-cache-size=0
+
+  mysql-replica-b:
+    container_name: mysql-replica-b
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: fastapi_db
+    ports:
+      - "3327:3306"
+    command: >
+      --authentication_policy=mysql_native_password
+      --server-id=21
+      --log-bin=mysql-bin
+      --gtid_mode=ON
+      --enforce-gtid-consistency=ON
+      --read-only=1
+      --relay-log=relay-bin
+      --skip_replica_start=1
+      --innodb-buffer-pool-size=1G
+      --host-cache-size=0
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      - nginx
+      - api-a
+      - api-b
+
+networks:
+  mysql-network:
+    driver: bridge
